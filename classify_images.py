@@ -8,28 +8,44 @@ import onnxruntime as ort
 from rich.progress import Progress
 
 # ================= CONFIGURATION =================
-# Folder containing images to check
-IMAGE_FOLDER = ''
-
-# Path to save the output JSON
-OUTPUT_JSON = 'output.json'
-
-# Threshold for including a tag (standard for WD1.4 models is ~0.35)
-TAG_THRESHOLD = 0.35
-
-# Model Repository ID
-REPO_ID = "SmilingWolf/wd-vit-tagger-v3"
+CONFIG_FILE = 'config.json'
 # =================================================
 
-def load_model():
+def load_config(config_file):
+    """
+    Load configuration from a JSON file.
+    If the file doesn't exist, create it with default values.
+    """
+    default_config = {
+        "IMAGE_FOLDER": "",
+        "OUTPUT_JSON": "output.json",
+        "TAG_THRESHOLD": 0.35,
+        "REPO_ID": "SmilingWolf/wd-vit-tagger-v3"
+    }
+
+    if os.path.exists(config_file):
+        print(f"Loading configuration from {config_file}...")
+        with open(config_file, 'r', encoding='utf-8') as f:
+            user_config = json.load(f)
+        
+        config = default_config.copy()
+        config.update(user_config)
+        return config
+    else:
+        print(f"Configuration file '{config_file}' not found. Creating with default values.")
+        with open(config_file, 'w', encoding='utf-8') as f:
+            json.dump(default_config, f, indent=4)
+        return default_config
+
+def load_model(repo_id):
     """Download and load the ONNX model and tags."""
-    print(f"Loading model from {REPO_ID}...")
+    print(f"Loading model from {repo_id}...")
     
     # Download model.onnx
-    model_path = hf_hub_download(repo_id=REPO_ID, filename="model.onnx")
+    model_path = hf_hub_download(repo_id=repo_id, filename="model.onnx")
     
     # Download selected_tags.csv
-    tags_path = hf_hub_download(repo_id=REPO_ID, filename="selected_tags.csv")
+    tags_path = hf_hub_download(repo_id=repo_id, filename="selected_tags.csv")
     
     # Load tags
     print("Loading tags...")
@@ -73,8 +89,8 @@ def preprocess_image(image_path, target_size=448):
         print(f"Error processing {image_path}: {e}")
         return None
 
-def process_folder(folder_path, output_path, threshold):
-    session, tag_names = load_model()
+def process_folder(folder_path, output_path, threshold, repo_id):
+    session, tag_names = load_model(repo_id)
     input_name = session.get_inputs()[0].name
     
     results = {}
@@ -142,10 +158,28 @@ def process_folder(folder_path, output_path, threshold):
     print(f"Done! Results saved to {output_path}")
 
 if __name__ == "__main__":
-    if IMAGE_FOLDER == '':
-        print("Error: IMAGE_FOLDER is not set. Please set the path to the folder containing images.")
+    config = load_config(CONFIG_FILE)
+    image_folder = config['IMAGE_FOLDER']
+    output_json = config['OUTPUT_JSON']
+    tag_threshold = config['TAG_THRESHOLD']
+    repo_id = config['REPO_ID']
+
+    if image_folder == '':
+        print("\033[93mWarning: IMAGE_FOLDER is not set.\033[0m")
+        while True:
+            image_folder = input("Please set the path to the folder containing images: ")
+            if image_folder == "":
+                continue
+            else:
+                if not os.path.exists(image_folder):
+                    print(f"Error: Folder '{image_folder}' does not exist.")
+                    continue
+                else:
+                    break
+        process_folder(image_folder, output_json, tag_threshold, repo_id)
     else:
-        if not os.path.exists(IMAGE_FOLDER):
-            print(f"Error: Folder '{IMAGE_FOLDER}' does not exist.")
+        if not os.path.exists(image_folder):
+            print(f"Error: Folder '{image_folder}' does not exist.")
+            print("Exiting...")
         else:
-            process_folder(IMAGE_FOLDER, OUTPUT_JSON, TAG_THRESHOLD)
+            process_folder(image_folder, output_json, tag_threshold, repo_id)

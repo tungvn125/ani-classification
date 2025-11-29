@@ -9,12 +9,33 @@ from textual.suggester import SuggestFromList
 from rich.text import Text
 from rich.style import Style
 
-# ================= CONFIGURATION =================
-# Must match the folder used in the previous script
-IMAGE_FOLDER = ''
-JSON_FILE = 'output.json'
-# =================================================
+CONFIG_FILE = 'config.json'
 
+def load_config(config_file):
+    """
+    Load configuration from a JSON file.
+    If the file doesn't exist, create it with default values.
+    """
+    default_config = {
+        "IMAGE_FOLDER": "",
+        "OUTPUT_JSON": "output.json",
+        "TAG_THRESHOLD": 0.35,
+        "REPO_ID": "SmilingWolf/wd-vit-tagger-v3"
+    }
+
+    if os.path.exists(config_file):
+        print(f"Loading configuration from {config_file}...")
+        with open(config_file, 'r', encoding='utf-8') as f:
+            user_config = json.load(f)
+        
+        config = default_config.copy()
+        config.update(user_config)
+        return config
+    else:
+        print(f"Configuration file '{config_file}' not found. Creating with default values.")
+        with open(config_file, 'w', encoding='utf-8') as f:
+            json.dump(default_config, f, indent=4)
+        return default_config
 class ImagePreview(Static):
     """Widget to display an image converted to ASCII/Blocks."""
     def set_image(self, image_path, filename):
@@ -124,15 +145,24 @@ class TagSearchApp(App):
     # State variables
     all_data = {}
     all_tags = set()
+    image_folder = reactive("")
+    json_file = reactive("")
+    tag_threshold = reactive(0.35)
+
+    def __init__(self, image_folder, json_file, tag_threshold, **kwargs):
+        super().__init__(**kwargs)
+        self.image_folder = image_folder
+        self.json_file = json_file
+        self.tag_threshold = tag_threshold
 
     def on_mount(self) -> None:
         """Load JSON data when app starts."""
-        if not os.path.exists(JSON_FILE):
+        if not os.path.exists(self.json_file):
             # Suspend the TUI to show the progress from the classification script
             with self.suspend():
-                from classify_images import process_folder
-                process_folder(IMAGE_FOLDER, JSON_FILE, threshold=0.35)
-        with open(JSON_FILE, 'r', encoding='utf-8') as f:
+                from classify_images import process_folder, load_model
+                process_folder(self.image_folder, self.json_file, self.tag_threshold)
+        with open(self.json_file, 'r', encoding='utf-8') as f:
             self.all_data = json.load(f)
 
         # Collect all unique tags for autocomplete
@@ -208,7 +238,7 @@ class TagSearchApp(App):
         # 2. UPDATE RIGHT PANE (Preview) - Only if <= 3 matches
         if 0 < len(matched_files) <= 3:
             for fname in matched_files:
-                full_path = os.path.join(IMAGE_FOLDER, fname)
+                full_path = os.path.join(self.image_folder, fname)
                 if os.path.exists(full_path):
                     img_widget = ImagePreview()
                     await preview_container.mount(img_widget)
@@ -220,8 +250,30 @@ class TagSearchApp(App):
             # FIX: Use markup
             await preview_container.mount(Static(f"[blue]Found {len(matched_files)} images.\nRefine search to <= 3 to see previews.[/blue]"))
 if __name__ == "__main__":
-    if IMAGE_FOLDER == '':
-        print("Error: IMAGE_FOLDER is not set. Please set the path to the folder containing images.")
-    else:
-        app = TagSearchApp()
+    config = load_config(CONFIG_FILE)
+    image_folder = config['IMAGE_FOLDER']
+    output_json = config['OUTPUT_JSON']
+    tag_threshold = config['TAG_THRESHOLD']
+
+    if image_folder == '':
+        print("\033[93mWarning: IMAGE_FOLDER is not set.\033[0m")
+        while True:
+            image_folder = input("Please set the path to the folder containing images: ")
+            if image_folder == "":
+                continue
+            else:
+                if not os.path.exists(image_folder):
+                    print(f"Error: Folder '{image_folder}' does not exist.")
+                    continue
+                else:
+                    break
+
+        app = TagSearchApp(image_folder=image_folder, json_file=output_json, tag_threshold=tag_threshold)
         app.run()
+    else:
+        if not os.path.exists(image_folder):
+            print(f"Error: Folder '{image_folder}' does not exist.")
+            print("Exiting...")
+        else:
+            app = TagSearchApp(image_folder=image_folder, json_file=output_json, tag_threshold=tag_threshold)
+            app.run()
