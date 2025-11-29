@@ -51,23 +51,34 @@ A two-part system for automatically tagging anime images and browsing them in a 
 
 ## Usage
 
-1.  **Configure the Image Folder:**
-    Before running, you **must** edit both `app.py` and `classify_images.py` to set the `IMAGE_FOLDER` variable to the path of your image directory.
+1.  **Initial Run & Configuration:**
+    Run either script to generate the configuration file.
+    ```bash
+    python app.py
+    ```
+    - The script will detect that `config.json` is missing and create one for you with default settings.
+    - It will then prompt you to enter the path to your image folder.
 
-    ```python
-    # In both app.py and classify_images.py
-    IMAGE_FOLDER = '/path/to/your/images' 
+2.  **Edit `config.json`:**
+    Open the newly created `config.json` file. You might want to adjust some parameters in there.
+    ```json
+    {
+        "IMAGE_FOLDER": "/path/to/your/images",
+        "OUTPUT_JSON": "output.json",
+        "TAG_THRESHOLD": 0.35,
+        "REPO_ID": "SmilingWolf/wd-vit-tagger-v3"
+    }
     ```
 
-2.  **Run the Application:**
+3.  **Run the Application:**
     Simply run the `app.py` script:
     ```bash
     python app.py
     ```
-    - The first time you run it, the app will pause to download the model and classify your images. This may take a long time depending on your internet speed, the number of images and your hardware.
+    - The first time you run it with a valid image folder, the app will pause to download the model and classify your images. This may take a long time depending on your internet speed, the number of images, and your hardware.
     - On subsequent runs, the app will start immediately by loading the saved `output.json`.
 
-3.  **Alternative (Manual Classification):**
+4.  **Alternative (Manual Classification):**
     For large image collections, you can run the classification script separately first.
     ```bash
     python classify_images.py
