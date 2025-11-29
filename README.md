@@ -1,10 +1,10 @@
-# AI-Powered Image Tagger and Browser
+# AI-Powered Anime Image Tagger and Browser
 
-A two-part system for automatically tagging images and browsing them in a terminal-based interface. This project uses a pre-trained AI model to classify images and a Textual TUI to provide a fast and efficient way to search and preview them by their tags.
+A two-part system for automatically tagging anime images and browsing them in a terminal-based interface. This project uses a pre-trained AI model to classify images and a Textual TUI to provide a fast and efficient way to search and preview them by their tags.
 
 ## Features
 
-- **Automatic Image Tagging**: Uses the `SmilingWolf/wd-vit-tagger-v3` model from Hugging Face to generate descriptive tags for your images.
+- **Automatic Image Tagging**: Uses the `SmilingWolf/wd-vit-tagger-v3` model from Hugging Face to generate descriptive tags for your anime images.
 - **Terminal-Based UI**: A fast, mouse-aware TUI built with Textual for searching and browsing.
 - **Real-time Search**: Filters images instantly as you type.
 - **Tag-based Filtering**: Find images by combining multiple tags (e.g., `1girl, red_hair, sword`).
