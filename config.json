@@ -1,0 +1,6 @@
+{
+    "IMAGE_FOLDER": "/home/tung/Documents/codeing-pj/ani-classification/wallpapers-fake",
+    "DB_PATH": "images.db",
+    "TAG_THRESHOLD": 0.35,
+    "REPO_ID": "SmilingWolf/wd-vit-tagger-v3"
+}
